@@ -21,8 +21,8 @@ const verifyTransporter = async () => {
     console.log('✅ Email transporter verified successfully');
     return true;
   } catch (error) {
-    console.error('❌ Email transporter verification failed:', error.message);
-    console.error('💡 Please check your email credentials in .env file');
+    console.error('Email transporter verification failed:', error.message);
+    console.error(' Please check your email credentials in .env file');
     return false;
   }
 };
@@ -152,6 +152,7 @@ const sendAutoReply = async (userEmail, userName) => {
     html
   );
 };
+
 
 module.exports = { 
   sendEmail, 
