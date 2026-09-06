@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Moon, Sun, Code2, Github, Linkedin, Mail } from 'lucide-react'; // ✅ Added Github, Linkedin, Mail
+import { Menu, X, Sun, Moon, Code2, Github, Linkedin, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
@@ -18,6 +18,15 @@ const Navbar = () => {
     { name: 'Contact', href: '/#contact' },
   ];
 
+  // Check saved theme on load
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      setIsDark(false);
+      document.body.classList.add('light-theme');
+    }
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -32,7 +41,31 @@ const Navbar = () => {
 
   const toggleTheme = () => {
     setIsDark(!isDark);
-    document.documentElement.classList.toggle('light');
+    if (isDark) {
+      document.body.classList.add('light-theme');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.body.classList.remove('light-theme');
+      localStorage.setItem('theme', 'dark');
+    }
+  };
+
+  const handleNavClick = (e, href) => {
+    e.preventDefault();
+    setIsOpen(false);
+    
+    if (href === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    if (href.startsWith('/#')) {
+      const sectionId = href.replace('/#', '');
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   };
 
   return (
@@ -56,7 +89,8 @@ const Navbar = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-gray-300 hover:text-white transition-colors text-sm font-medium relative group"
+                onClick={(e) => handleNavClick(e, link.href)}
+                className="text-gray-300 hover:text-white transition-colors text-sm font-medium relative group cursor-pointer"
               >
                 {link.name}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-500 transition-all group-hover:w-full" />
@@ -89,11 +123,27 @@ const Navbar = () => {
               </a>
             </div>
 
+            {/* Modern Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              className="relative w-12 h-6 rounded-full transition-all duration-300 flex items-center px-0.5"
+              style={{
+                background: isDark 
+                  ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' 
+                  : 'linear-gradient(135deg, #f59e0b, #f97316)'
+              }}
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <motion.div
+                className="w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center"
+                animate={{ x: isDark ? 0 : 24 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                {isDark ? (
+                  <Moon className="w-3 h-3 text-indigo-600" />
+                ) : (
+                  <Sun className="w-3 h-3 text-yellow-500" />
+                )}
+              </motion.div>
             </button>
           </div>
 
@@ -121,8 +171,8 @@ const Navbar = () => {
                 <a
                   key={link.name}
                   href={link.href}
+                  onClick={(e) => handleNavClick(e, link.href)}
                   className="block text-gray-300 hover:text-white transition-colors text-lg font-medium"
-                  onClick={() => setIsOpen(false)}
                 >
                   {link.name}
                 </a>
@@ -154,13 +204,33 @@ const Navbar = () => {
                 </a>
               </div>
 
-              <button
-                onClick={toggleTheme}
-                className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                {isDark ? 'Light Mode' : 'Dark Mode'}
-              </button>
+              {/* Mobile Theme Toggle */}
+              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                <span className="text-gray-300 text-sm">
+                  {isDark ? 'Dark Mode' : 'Light Mode'}
+                </span>
+                <button
+                  onClick={toggleTheme}
+                  className="relative w-12 h-6 rounded-full transition-all duration-300 flex items-center px-0.5"
+                  style={{
+                    background: isDark 
+                      ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' 
+                      : 'linear-gradient(135deg, #f59e0b, #f97316)'
+                  }}
+                >
+                  <motion.div
+                    className="w-5 h-5 rounded-full bg-white shadow-md flex items-center justify-center"
+                    animate={{ x: isDark ? 0 : 24 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  >
+                    {isDark ? (
+                      <Moon className="w-3 h-3 text-indigo-600" />
+                    ) : (
+                      <Sun className="w-3 h-3 text-yellow-500" />
+                    )}
+                  </motion.div>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
