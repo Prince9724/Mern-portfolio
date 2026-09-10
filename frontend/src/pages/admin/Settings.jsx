@@ -69,19 +69,16 @@ const Settings = () => {
     }));
   };
 
-  // 📤 Image Upload Handler for Settings
   const handleImageUpload = async (e, section, field) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
       toast.error('Please upload a valid image (JPEG, PNG, GIF, WEBP, SVG)');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
@@ -94,9 +91,7 @@ const Settings = () => {
 
     try {
       const response = await api.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       
       const imageUrl = response.data.data.url;
@@ -139,7 +134,6 @@ const Settings = () => {
     );
   }
 
-  // Field renderer with upload support
   const renderField = (section, field) => {
     const value = settings[section.key]?.[field.key] || '';
     const isImageField = field.key === 'profileImage' || 
@@ -195,28 +189,48 @@ const Settings = () => {
             placeholder={`Enter ${field.label.toLowerCase()}`}
             className="flex-1 w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
           />
+          
           {isImageField && (
-            <div className="flex items-center gap-2">
-              <label className={`px-4 py-2 ${uploading && uploadField === `${section.key}.${field.key}` ? 'bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors cursor-pointer whitespace-nowrap flex items-center gap-2 text-sm`}>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Hidden file input */}
+              <input
+                type="file"
+                id={`upload-${section.key}-${field.key}`}
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, section.key, field.key)}
+                className="hidden"
+                disabled={uploading}
+              />
+              
+              {/* Upload button */}
+              <label
+                htmlFor={`upload-${section.key}-${field.key}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors whitespace-nowrap ${
+                  uploading && uploadField === `${section.key}.${field.key}`
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}
+              >
                 {uploading && uploadField === `${section.key}.${field.key}` ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </>
                 ) : (
-                  <Upload className="w-4 h-4" />
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Upload Image
+                  </>
                 )}
-                {uploading && uploadField === `${section.key}.${field.key}` ? 'Uploading...' : 'Upload Image'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, section.key, field.key)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  disabled={uploading}
-                />
               </label>
+
+              {/* Remove button */}
               {value && (
                 <button
                   type="button"
                   onClick={() => handleChange(section.key, field.key, '')}
-                  className="p-1.5 rounded hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors"
+                  className="p-1.5 rounded hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                  title="Remove image"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -224,8 +238,10 @@ const Settings = () => {
             </div>
           )}
         </div>
+
+        {/* Image Preview */}
         {isImageField && value && (
-          <div className="mt-2">
+          <div className="mt-3">
             <img 
               src={value} 
               alt={field.label}
