@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { publicApi } from '../../services/api';
+import { Link } from 'react-router-dom'; // ✅ Import Link
+import { api } from '../../services/api';
 import {
   FolderGit2,
   Code2,
@@ -23,19 +24,37 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsRes, skillsRes] = await Promise.all([
-          publicApi.get('/projects'),
-          publicApi.get('/skills'),
+        const [projectsRes, skillsRes, messagesRes] = await Promise.all([
+          api.get('/projects'),
+          api.get('/skills'),
+          api.get('/admin/messages'),
         ]);
+
+        const messages = messagesRes.data?.data || [];
+        const unreadCount = messages.filter(m => !m.isRead).length;
 
         setStats({
           projects: projectsRes.data?.count || 0,
           skills: skillsRes.data?.count || 0,
-          messages: 0,
-          unreadMessages: 0,
+          messages: messages.length,
+          unreadMessages: unreadCount,
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        
+        try {
+          const [projectsRes, skillsRes] = await Promise.all([
+            api.get('/projects'),
+            api.get('/skills'),
+          ]);
+          setStats(prev => ({
+            ...prev,
+            projects: projectsRes.data?.count || 0,
+            skills: skillsRes.data?.count || 0,
+          }));
+        } catch (fallbackError) {
+          console.error('Fallback error:', fallbackError);
+        }
       } finally {
         setLoading(false);
       }
@@ -86,38 +105,42 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <a
-          href="/admin/projects/new"
-          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group"
+        {/* ✅ Use Link instead of <a> */}
+        <Link
+          to="/admin/projects/new"
+          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group cursor-pointer"
         >
           <PlusCircle className="w-10 h-10 text-purple-400 mx-auto mb-3 group-hover:rotate-90 transition-transform" />
           <h4 className="text-white font-medium">Add Project</h4>
           <p className="text-gray-400 text-sm">Create a new project</p>
-        </a>
-        <a
-          href="/admin/skills"
-          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group"
+        </Link>
+        
+        <Link
+          to="/admin/skills"
+          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group cursor-pointer"
         >
           <Code2 className="w-10 h-10 text-blue-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
           <h4 className="text-white font-medium">Manage Skills</h4>
           <p className="text-gray-400 text-sm">Add or edit skills</p>
-        </a>
-        <a
-          href="/admin/settings"
-          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group"
+        </Link>
+        
+        <Link
+          to="/admin/settings"
+          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group cursor-pointer"
         >
           <Settings className="w-10 h-10 text-yellow-400 mx-auto mb-3 group-hover:rotate-90 transition-transform" />
           <h4 className="text-white font-medium">Site Settings</h4>
           <p className="text-gray-400 text-sm">Update portfolio content</p>
-        </a>
-        <a
-          href="/admin/profile"
-          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group"
+        </Link>
+        
+        <Link
+          to="/admin/profile"
+          className="glass rounded-xl p-6 border border-white/5 hover:border-purple-500/30 transition-all hover:scale-105 text-center group cursor-pointer"
         >
           <User className="w-10 h-10 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
           <h4 className="text-white font-medium">Profile</h4>
           <p className="text-gray-400 text-sm">Update your account</p>
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import toast from 'react-hot-toast';
-import { Save, Loader2, Upload, X } from 'lucide-react';
+import { Save, Loader2, Upload, X, FileText } from 'lucide-react';
 
 const Settings = () => {
   const [loading, setLoading] = useState(true);
@@ -69,6 +69,7 @@ const Settings = () => {
     }));
   };
 
+  // 🖼️ Image Upload
   const handleImageUpload = async (e, section, field) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -100,6 +101,50 @@ const Settings = () => {
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error.response?.data?.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
+      setUploadField(null);
+      e.target.value = '';
+    }
+  };
+
+  // 📄 Resume/File Upload
+  const handleFileUpload = async (e, section, field) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid file (PDF, DOC, DOCX)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size should be less than 10MB');
+      return;
+    }
+
+    setUploading(true);
+    setUploadField(`${section}.${field}`);
+    const formData = new FormData();
+    formData.append('image', file); // Backend expects 'image' field
+
+    try {
+      const response = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      
+      const fileUrl = response.data.data.url;
+      handleChange(section, field, fileUrl);
+      toast.success('Resume uploaded successfully!');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.message || 'Failed to upload resume');
     } finally {
       setUploading(false);
       setUploadField(null);
@@ -140,6 +185,7 @@ const Settings = () => {
                          field.key === 'ogImage' || 
                          field.key === 'logo' || 
                          field.key === 'favicon';
+    const isFileField = field.key === 'resumeUrl';
 
     if (field.type === 'textarea') {
       return (
@@ -186,13 +232,17 @@ const Settings = () => {
             type="text"
             value={value}
             onChange={(e) => handleChange(section.key, field.key, e.target.value)}
-            placeholder={`Enter ${field.label.toLowerCase()}`}
+            placeholder={
+              isFileField 
+                ? 'Upload resume or enter URL' 
+                : `Enter ${field.label.toLowerCase()}`
+            }
             className="flex-1 w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-purple-500"
           />
           
+          {/* 🖼️ Image Upload */}
           {isImageField && (
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Hidden file input */}
               <input
                 type="file"
                 id={`upload-${section.key}-${field.key}`}
@@ -202,7 +252,6 @@ const Settings = () => {
                 disabled={uploading}
               />
               
-              {/* Upload button */}
               <label
                 htmlFor={`upload-${section.key}-${field.key}`}
                 className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors whitespace-nowrap ${
@@ -224,7 +273,6 @@ const Settings = () => {
                 )}
               </label>
 
-              {/* Remove button */}
               {value && (
                 <button
                   type="button"
@@ -237,9 +285,55 @@ const Settings = () => {
               )}
             </div>
           )}
+
+          {/* 📄 Resume Upload */}
+          {isFileField && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <input
+                type="file"
+                id={`upload-${section.key}-${field.key}`}
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => handleFileUpload(e, section.key, field.key)}
+                className="hidden"
+                disabled={uploading}
+              />
+              
+              <label
+                htmlFor={`upload-${section.key}-${field.key}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg cursor-pointer transition-colors whitespace-nowrap ${
+                  uploading && uploadField === `${section.key}.${field.key}`
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white`}
+              >
+                {uploading && uploadField === `${section.key}.${field.key}` ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Upload Resume
+                  </>
+                )}
+              </label>
+
+              {value && (
+                <button
+                  type="button"
+                  onClick={() => handleChange(section.key, field.key, '')}
+                  className="p-1.5 rounded hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors flex-shrink-0"
+                  title="Remove resume"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Image Preview */}
+        {/* 🖼️ Image Preview */}
         {isImageField && value && (
           <div className="mt-3">
             <img 
@@ -248,6 +342,34 @@ const Settings = () => {
               className="w-32 h-20 object-cover rounded-lg border border-white/10"
               onError={(e) => e.target.style.display = 'none'}
             />
+          </div>
+        )}
+
+        {/* 📄 Resume Preview */}
+        {isFileField && value && (
+          <div className="mt-3 flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <FileText className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium">Resume uploaded</p>
+              <a 
+                href={value} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-purple-400 hover:text-purple-300 text-xs truncate block"
+              >
+                {value.length > 50 ? value.substring(0, 50) + '...' : value}
+              </a>
+            </div>
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-lg transition-colors whitespace-nowrap"
+            >
+              View
+            </a>
           </div>
         )}
       </div>
