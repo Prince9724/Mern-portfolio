@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { publicApi } from '../../services/api';
-import { Calendar, Code2 } from 'lucide-react';
+import { Calendar, Terminal, CheckCircle2 } from 'lucide-react';
 
 const Experience = () => {
   const [journey, setJourney] = useState([]);
@@ -14,7 +14,7 @@ const Experience = () => {
         setJourney(data.data || []);
       } catch (error) {
         console.error('Error fetching journey:', error);
-        setJourney([]); // Set empty array on error
+        setJourney([]);
       } finally {
         setLoading(false);
       }
@@ -24,17 +24,14 @@ const Experience = () => {
 
   if (loading) {
     return (
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500" />
-          </div>
+      <section className="py-24">
+        <div className="max-w-7xl mx-auto px-4 flex justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-emerald-500/30 border-t-emerald-500" />
         </div>
       </section>
     );
   }
 
-  // If no journey data, show default content
   const displayJourney = journey.length > 0 ? journey : [
     {
       _id: '1',
@@ -54,71 +51,124 @@ const Experience = () => {
     }
   ];
 
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short' 
+    });
+  };
+
   return (
-    <section id="experience" className="py-20 relative">
+    <section id="experience" className="py-24 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 bg-grid-pattern opacity-20" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ✅ Section Header - CENTERED */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold">
-            My <span className="gradient-text">Journey</span>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="h-px w-12 bg-emerald-500/50" />
+            <span className="text-emerald-400 text-sm font-mono tracking-wider">04. JOURNEY</span>
+            <div className="h-px w-12 bg-emerald-500/50" />
+          </div>
+          
+          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight">
+            <span className="text-white">My</span>{' '}
+            <span className="gradient-text">Journey</span>
           </h2>
-          <p className="text-gray-400 mt-3 max-w-2xl mx-auto">
-            My learning path and experience
+          
+          <p className="text-ink-400 mt-4 max-w-2xl mx-auto text-lg">
+            The path that shaped me as a developer
           </p>
+          
+          <div className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-lg bg-ink-800/40 border border-ink-700/30">
+            <Terminal className="w-4 h-4 text-emerald-400" />
+            <span className="text-emerald-400 font-mono text-sm">~/.career --timeline</span>
+          </div>
         </motion.div>
 
-        <div className="relative max-w-3xl mx-auto">
-          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-purple-500/30 transform md:-translate-x-1/2" />
+        {/* Timeline */}
+        <div className="relative max-w-4xl mx-auto">
+          {/* Vertical Line - Gradient */}
+          <div className="absolute left-4 md:left-1/2 top-2 bottom-2 w-px bg-gradient-to-b from-emerald-500/60 via-emerald-500/20 to-transparent transform md:-translate-x-1/2" />
 
           {displayJourney.map((item, index) => (
             <motion.div
               key={item._id}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.15 }}
               viewport={{ once: true }}
-              className={`relative flex items-start gap-6 mb-8 ${
+              className={`relative flex items-start gap-6 mb-10 ${
                 index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
               }`}
             >
-              <div className="absolute left-4 md:left-1/2 top-1.5 w-4 h-4 rounded-full bg-purple-500 border-4 border-dark-400 transform -translate-x-1/2 z-10" />
+              {/* Timeline Dot */}
+              <div className="absolute left-4 md:left-1/2 top-4 transform -translate-x-1/2 z-10">
+                <div className="relative">
+                  {item.current && (
+                    <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-50" />
+                  )}
+                  <div className={`w-3.5 h-3.5 rounded-full border-2 ${
+                    item.current 
+                      ? 'bg-emerald-400 border-emerald-300 shadow-glow-emerald' 
+                      : 'bg-ink-800 border-emerald-500/50'
+                  }`} />
+                </div>
+              </div>
 
+              {/* Card */}
               <div className={`pl-12 md:pl-0 w-full md:w-1/2 ${
-                index % 2 === 0 ? 'md:pr-12' : 'md:pl-12'
+                index % 2 === 0 ? 'md:pr-14' : 'md:pl-14'
               }`}>
-                <div className="glass rounded-xl p-5 border border-white/5 hover:border-purple-500/30 transition-all">
-                  <div className="flex items-start justify-between">
-                    <h4 className="text-white font-semibold">{item.title}</h4>
+                <div className="group relative p-5 rounded-2xl bg-ink-800/40 border border-ink-700/30 hover:border-emerald-500/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <h4 className="text-white font-semibold text-lg leading-tight">
+                      {item.title}
+                    </h4>
                     {item.current && (
-                      <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">
-                        Current
-                      </span>
+                      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400 text-xs font-mono font-medium">active</span>
+                      </div>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm mt-1">{item.description}</p>
-                  <div className="flex items-center gap-1 text-gray-500 text-xs mt-2">
+
+                  {/* Description */}
+                  <p className="text-ink-400 text-sm leading-relaxed mb-4">
+                    {item.description}
+                  </p>
+
+                  {/* Date */}
+                  <div className="flex items-center gap-2 text-ink-500 text-xs font-mono mb-3">
                     <Calendar className="w-3 h-3" />
-                    {new Date(item.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-                    {item.endDate ? (
-                      ` - ${new Date(item.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}`
-                    ) : (
-                      ' - Present'
-                    )}
+                    <span>{formatDate(item.startDate)}</span>
+                    <span className="text-emerald-500/50">→</span>
+                    <span>{item.endDate ? formatDate(item.endDate) : 'present'}</span>
                   </div>
+
+                  {/* Technologies */}
                   {item.technologies && item.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-wrap gap-1.5 pt-3 border-t border-ink-700/30">
                       {item.technologies.map(tech => (
-                        <span key={tech} className="px-2 py-0.5 bg-white/5 rounded text-xs text-gray-300">
+                        <span 
+                          key={tech} 
+                          className="px-2 py-0.5 bg-emerald-500/8 border border-emerald-500/15 rounded text-xs text-emerald-400 font-mono"
+                        >
                           {tech}
                         </span>
                       ))}
                     </div>
                   )}
+
+                  {/* Corner accent */}
+                  <div className="absolute top-3 right-3 w-1 h-1 rounded-full bg-emerald-400/40 group-hover:bg-emerald-400 transition-colors" />
                 </div>
               </div>
             </motion.div>
