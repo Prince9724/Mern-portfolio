@@ -19,22 +19,26 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor
+// ✅ REQUEST INTERCEPTOR: Add token from localStorage
 api.interceptors.request.use(
   (config) => {
-    console.log(`📤 ${config.method.toUpperCase()} ${config.url}`);
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    console.log(`📤 ${config.method.toUpperCase()} ${config.url}`, token ? '(with token)' : '');
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// ✅ RESPONSE INTERCEPTOR: Handle 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.status, error.response?.data);
     
-    // ✅ Don't redirect for these endpoints
+    // ✅ Skip redirect for these endpoints (login, me, public data)
     const url = error.config?.url || '';
     const skipRedirect = 
       url.includes('/admin/login') ||
@@ -44,13 +48,13 @@ api.interceptors.response.use(
       url.includes('/skills') ||
       url.includes('/journey');
 
-    // Only redirect on 401 for PROTECTED routes (not login/me checks)
     if (
       error.response?.status === 401 && 
       !skipRedirect &&
       !window.location.pathname.includes('/admin/login')
     ) {
       console.log('🔒 Session expired, redirecting to login');
+      localStorage.removeItem('adminToken');
       window.location.href = '/admin/login';
     }
     

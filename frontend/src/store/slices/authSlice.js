@@ -8,20 +8,23 @@ export const loginAdmin = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        `${API_URL}/admin/login`, 
-        { email, password }, 
-        { 
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
+        `${API_URL}/admin/login`,
+        { email, password },
+        { withCredentials: true }
       );
-      console.log('✅ Login successful:', response.data);
+      
+      // ✅ Token localStorage mein save karo
+      if (response.data.token) {
+        localStorage.setItem('adminToken', response.data.token);
+        console.log('✅ Token saved to localStorage');
+      }
+      
       return response.data.data;
     } catch (error) {
       console.error('❌ Login error:', error.response?.data);
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Login failed'
+      );
     }
   }
 );
@@ -31,12 +34,15 @@ export const logoutAdmin = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await axios.post(
-        `${API_URL}/admin/logout`, 
-        {}, 
+        `${API_URL}/admin/logout`,
+        {},
         { withCredentials: true }
       );
+      // ✅ Token remove karo
+      localStorage.removeItem('adminToken');
       return null;
     } catch (error) {
+      localStorage.removeItem('adminToken');
       return rejectWithValue(error.response?.data?.message || 'Logout failed');
     }
   }
@@ -46,20 +52,30 @@ export const getMe = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem('adminToken');
+      
+      // Agar token nahi hai toh skip
+      if (!token) {
+        return rejectWithValue('No token');
+      }
+
       const response = await axios.get(
-        `${API_URL}/admin/me`, 
-        { 
+        `${API_URL}/admin/me`,
+        {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-      console.log('✅ GetMe successful:', response.data);
+      
       return response.data.data;
     } catch (error) {
-      console.error('❌ GetMe error:', error.response?.data);
-      return rejectWithValue(error.response?.data?.message || 'Not authenticated');
+      // ✅ Token invalid hai toh remove karo
+      localStorage.removeItem('adminToken');
+      return rejectWithValue(
+        error.response?.data?.message || 'Not authenticated'
+      );
     }
   }
 );
@@ -68,21 +84,22 @@ export const updateProfile = createAsyncThunk(
   'auth/updateProfile',
   async (profileData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem('adminToken');
       const response = await axios.put(
         `${API_URL}/admin/profile`,
         profileData,
-        { 
+        {
           withCredentials: true,
           headers: {
-            'Content-Type': 'application/json',
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
-      console.log('✅ Profile updated:', response.data);
       return response.data.data;
     } catch (error) {
-      console.error('❌ Profile update error:', error.response?.data);
-      return rejectWithValue(error.response?.data?.message || 'Failed to update profile');
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to update profile'
+      );
     }
   }
 );
@@ -93,6 +110,7 @@ const authSlice = createSlice({
     admin: null,
     isAuthenticated: false,
     loading: false,
+    initialCheckDone: false,
     error: null,
   },
   reducers: {
@@ -103,12 +121,14 @@ const authSlice = createSlice({
       state.admin = null;
       state.isAuthenticated = false;
       state.loading = false;
+      state.initialCheckDone = false;
       state.error = null;
+      localStorage.removeItem('adminToken');
     },
   },
   extraReducers: (builder) => {
     builder
-      // Login
+      // LOGIN
       .addCase(loginAdmin.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -117,29 +137,27 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.admin = action.payload;
-        console.log('✅ Auth state updated: Logged in');
+        state.initialCheckDone = true;
+        state.error = null;
       })
       .addCase(loginAdmin.rejected, (state, action) => {
         state.loading = false;
+        state.isAuthenticated = false;
+        state.admin = null;
         state.error = action.payload;
-        console.error('❌ Auth state: Login failed');
       })
-      // Logout
-      .addCase(logoutAdmin.pending, (state) => {
-        state.loading = true;
-      })
+      // LOGOUT
       .addCase(logoutAdmin.fulfilled, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.admin = null;
-        console.log('✅ Auth state: Logged out');
       })
       .addCase(logoutAdmin.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.admin = null;
       })
-      // Get Me
+      // GET ME
       .addCase(getMe.pending, (state) => {
         state.loading = true;
       })
@@ -147,25 +165,23 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = true;
         state.admin = action.payload;
-        console.log('✅ Auth state: User verified');
+        state.initialCheckDone = true;
       })
       .addCase(getMe.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.admin = null;
-        console.log('❌ Auth state: User not authenticated');
+        state.initialCheckDone = true;
       })
-      // Update Profile
+      // UPDATE PROFILE
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.admin = action.payload;
-        console.log('✅ Auth state: Profile updated');
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.error = action.payload;
-        console.error('❌ Auth state: Profile update failed');
       });
   },
 });
 
 export const { clearError, resetAuth } = authSlice.actions;
-export default authSlice.reducer;
+export default authSlice.reducer; 
