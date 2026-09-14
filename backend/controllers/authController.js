@@ -1,10 +1,9 @@
 const Admin = require('../models/Admin');
 const jwt = require('jsonwebtoken');
 
-// Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
 
@@ -38,22 +37,24 @@ const login = async (req, res) => {
       });
     }
 
-    // Update last login
     admin.lastLogin = new Date();
     await admin.save();
 
     const token = generateToken(admin._id);
 
+    // ✅ Cookie bhi set karo (local dev ke liye)
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
     });
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
+      token, // ✅ Token frontend ko bhi bhejo
       data: {
         id: admin._id,
         name: admin.name,
@@ -63,6 +64,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -103,33 +105,29 @@ const getMe = async (req, res) => {
     }
   });
 };
+
 // @desc    Update Admin Profile
 // @route   PUT /api/admin/profile
 // @access  Private
 const updateProfile = async (req, res) => {
   try {
     const admin = await Admin.findById(req.admin._id);
-    
+
     if (!admin) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin not found'
-      });
+      return res.status(404).json({ success: false, message: 'Admin not found' });
     }
 
     const { name, email, profileImage, currentPassword, newPassword } = req.body;
 
-    // Update basic info
     if (name) admin.name = name;
     if (email) admin.email = email;
     if (profileImage !== undefined) admin.profileImage = profileImage;
 
-    // Update password if provided
     if (newPassword) {
       if (!currentPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Current password is required to change password'
+          message: 'Current password is required'
         });
       }
 
@@ -158,10 +156,10 @@ const updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error in updateProfile:', error);
+    console.error('Update profile error:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to update profile'
+      message: error.message
     });
   }
 };
