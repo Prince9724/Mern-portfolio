@@ -4,13 +4,13 @@ const Admin = require('../models/Admin');
 const protect = async (req, res, next) => {
   let token;
 
-  // 1. Cookie se token check karo
-  if (req.cookies?.token) {
-    token = req.cookies.token;
-  }
-  // 2. Authorization header se token check karo
-  else if (req.headers.authorization?.startsWith('Bearer ')) {
+  // 1. Authorization header se token check karo (Priority for cross-origin SPAs)
+  if (req.headers.authorization?.startsWith('Bearer ')) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // 2. Cookie fallback
+  else if (req.cookies?.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {

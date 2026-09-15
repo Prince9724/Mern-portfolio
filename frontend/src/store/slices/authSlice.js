@@ -21,10 +21,14 @@ export const loginAdmin = createAsyncThunk(
       
       return response.data.data;
     } catch (error) {
-      console.error('❌ Login error:', error.response?.data);
-      return rejectWithValue(
-        error.response?.data?.message || error.message || 'Login failed'
-      );
+      console.error('❌ Login error:', error.response?.data || error.message);
+      const errorMessage =
+        error.response?.data?.message ||
+        (error.message === 'Network Error'
+          ? 'Network Error: Cannot connect to server. Please check backend deployment or CORS settings.'
+          : error.message) ||
+        'Login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
