@@ -257,7 +257,7 @@ const Projects = () => {
                               alt={project.title}
                               className="w-14 h-14 rounded-xl object-cover border border-ink-700/40"
                               onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/100/0B0F14/10B981?text=?';
+                                e.target.src = 'https://placehold.co/100/0B0F14/10B981?text=?';
                               }}
                             />
                           </div>

@@ -1,4 +1,5 @@
 const Project = require('../models/Project');
+const mongoose = require('mongoose');
 const slugify = require('slugify');
 
 // @desc    Get all projects
@@ -43,15 +44,16 @@ const getProjects = async (req, res) => {
   }
 };
 
-// @desc    Get single project by slug
+// @desc    Get single project by slug or ID
 // @route   GET /api/projects/:slug
-// @access  Public
+// @access  Public / Admin
 const getProjectBySlug = async (req, res) => {
   try {
-    const project = await Project.findOne({ 
-      slug: req.params.slug,
-      status: 'published'
-    });
+    const { slug } = req.params;
+    const isObjectId = mongoose.Types.ObjectId.isValid(slug);
+
+    const query = isObjectId ? { _id: slug } : { slug };
+    const project = await Project.findOne(query);
 
     if (!project) {
       return res.status(404).json({
